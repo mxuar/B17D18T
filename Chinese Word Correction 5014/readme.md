@@ -1,4 +1,2 @@
-1.data文件夹是所有数据文件
-2.model文件夹里面有我们已经训练好的CBOW模型
-3.如果想运行看效果就直接运行corrector就行了
-4.如果想重新训练模型，运行train_model.py
+1.The dataset and trained models are too big to be uploaded
+2.Use "train_model.py" to train model
