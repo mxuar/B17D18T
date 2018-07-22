@@ -17,8 +17,8 @@ slowk_period = 3
 slowd_period = 3
 
 #data path & data information path
-path_data= '/Users/xumin/Desktop/svmm 2.7/Data/data_format1_20170717_20170915.h5'
-path_info= '/Users/xumin/Desktop/svmm 2.7/Data/information.csv'
+path_data= '*/Data/data_format1_20170717_20170915.h5'
+path_info= '*/Data/information.csv'
 
 #13 futures
 indexes = ['A.DCE', 'AG.SHF', 'AU.SHF', 'I.DCE', 'IC.CFE', 'IF.CFE',
