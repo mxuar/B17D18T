@@ -8,7 +8,7 @@ Created on Sat Sep 16 16:08:42 2017
 # Change the working directory to your strategy folder. You should change this
 # directory below on your own computer accordingly
 import os
-working_directory = '/Users/xumin/Desktop/svmm 2.7'
+working_directory = '*/svmm 2.7'
 os.chdir(working_directory)
 from svmtest import handle_bar
 
@@ -23,7 +23,7 @@ from copy import deepcopy
 
 
 # All data directory
-data_directory = '/Users/xumin/Desktop/svmm 2.7/Data/'
+data_directory = '*/svmm 2.7/Data/'
 format1_dir = 'data_format1_20170717_20170915.h5'
 format2_dir = 'data_format2_20170918_20171211.h5'
 
