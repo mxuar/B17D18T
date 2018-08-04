@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+	<head>
+		<title>Level 2 Attempt</title>
+
+		<style>
+			rect.bordered {
+        		stroke: #FFFFFF;
+        		stroke-width:10px;   
+      		}
+
+      		text.mono {
+        		font-size: 9pt;
+        		font-family: Consolas, courier;
+        		fill: #000;
+        	}
+
+        	#tooltip{
+        		position: absolute;
+        		width: 150px;
+        		height: 10px;
+        		border-radius:3px;
+        		background: #FFFFFF;
+        		color: #000;
+        		z-index: 200;
+        		padding: 10px;
+        		left:-1000px;
+
+        	}
+
+        	#tooltip.hidden{display: none;}
+
+        	#tooltip p {
+        		margin: 0;
+        		font-family: Consolas, courier;
+        		font-size: 7pt;
+        		line-height: 10px;
+        	}
+
+      		}
+		</style>
+
+		<script src="http://d3js.org/d3.v3.min.js"></script> 
+	</head>
+	
+	<body>
+		<div id="tooltip" class="hidden">
+			<p><span id="tooltip_value">100</span></p>
+		</div>
+		<div id="chart"></div>
+
+
+
+		<script type="text/javascript">
+				var margin = { top: 30, right: 50, bottom: 50, left: 50 },
+					width = 1028 - margin.right - margin.left,
+					height = 1028 - margin.top - margin.bottom,
+					gridsize = Math.floor(height/12),
+					legendwidth = gridsize * 2,
+					buckets = 6,
+					colors = ["#FFFEC6", "#FAE096", "#F3B06E", "#E5744F", "#C64A53", "#911D43"],
+					years = ["1997", "1998", "1999","2000", "2001", "2002", "2003", "2004", "2005", "2006"],
+					months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Sep"],
+					dataset = ["temperature_daily.csv"];
+
+				// define the canvas
+				var svg = d3.select("#chart")
+							.append("svg")
+							.attr("width", width + margin.right + margin.left)
+							.attr("height", height + margin.top + margin.bottom)
+							.append("g")
+							.attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+				// the x axis
+				var monthlabels = svg.selectAll(".monthlabel")
+									 .data(months)
+									 .enter()
+									 .append("text")
+									 .text(function(d) { return d;})
+									 .attr("x", 0)
+									 .attr("y", function(d, i) { return i * gridsize;})
+									 .style("text-anchor", "end")
+									 .attr("transform", "translate(-6," + gridsize/2 + ")")
+									 .attr("class", "mono");
+				
+				// the y axis
+				var yearlabels = svg.selectAll(".yearlabel")
+									.data(years)
+									.enter()
+									.append("text")
+									.text(function(d) { return d;})
+									.attr("x", function(d, i) { return i * gridsize * 1.2;})
+									.attr("y", 0)
+									.style("text-anchor", "middle")
+									.attr("transform","translate(" + gridsize/2 + ",-6)")
+									.attr("class", "mono");
+
+				var mainchart = function(csvFile){
+										d3.csv(csvFile, 
+												
+											   function(d) {// seperate the date and process the data
+											   				d.date = new Date(d.date);
+															d.year = d.date.getFullYear();
+															d.month = d.date.getMonth() + 1;
+															d.day = d.date.getDate();
+															return{
+																year: + d.year,
+																month: + d.month,
+																day: + d.day,
+																min_temperature: + d.min_temperature,
+																max_temperature: + d.max_temperature
+															};
+												},
+												function(error, data) {
+														 	var colorscale = d3.scale.quantile()
+														 		.domain([buckets - 1, d3.max(data, function(d){ return d.min_temperature; })])
+														 		.range(colors);
+
+														// group data by year and month
+														 	var datagroupby = d3.nest()
+														 							.key(function(d){
+														 								return d.year;
+														 							})
+														 							.key(function(d){
+														 								return d.month;
+														 							})
+														 							.entries(data);
+
+														// define the axis of heatmap chart
+														 	var grid_xscale = d3.scale.ordinal()
+														 						  .domain(years)
+														 						  .rangeBands([0, width]);
+														 	var grid_yscale = d3.scale.ordinal()
+														 						  .domain(d3.range(1, 13))
+														 						  .rangeBands([0, height]);
+
+														 	datagroupby.forEach(function(d){
+														 		var values = d.values;
+
+														 		values.forEach(function(v){
+
+														 		// define the location and fill color of the grid
+														 			svg.append("rect")
+														 		 	 	.attr("y", grid_yscale(+v.key))
+														 		 	 	.attr("x", grid_xscale(d.key))
+														 		 		.attr("width", grid_xscale.rangeBand())
+														 		 		.attr("height", grid_yscale.rangeBand())
+														 		 	 	.attr("class", "bordered")
+														    		// find the minimum temperature of each month
+														    			.style("fill", colorscale(d3.min(v.values, function(d){
+														 		 	 		return d.min_temperature;
+														 		 	 	})));
+
+														 		// the attempt to add tips to each heatmap grid ---- failed 	
+																	svg.on("mouseover", function(d) {
+															 		 	 		var xPosition = parseFloat(d3.select(this).attr("x"));
+															 		 	 		var yPosition = parseFloat(d3.select(this).attr("y"));
+															 		 	 		//var tooltip = 
+															 		 	 		d3.select("#tooltip")
+															 		 	 		  .style("left", xPosition + "px")
+															 		 	 		  .style("top", yPosition + gridsize * 2 + "px")
+															 		 	 		  .select("#tooltip_value")
+															 		 	 		  .text("Date: " + v.key + " min: " + v.value + " max: " + v.value);
+															 		 	 		 d3.select("#tooltip")
+															 		 	 		   .classed("hidden", false);
+
+
+															 		 	 		/*svg.append("text")
+															 		 	 			.attr("id", "tooltip")
+															 		 	 			.attr("y", y)
+															 		 	 			.attr("x", x)
+															 		 	 			.attr("text-anchor", "middle")
+															 		 	 			.attr("font-family", "Consolas, courier")
+															 		 	 			.attr("font-size", "9pt")
+															 		 	 			.attr("font.weight", "bold")
+															 		 	 			.attr("fill", "black")
+															 		 	 		    .text("min_temperature: " + minline.value);*/
+															 		 	 	})
+														 		 	 	.on("mouseout", function(d){
+														 		 	 		d3.select("#tooltip")
+														 		 	 		  .classed("hidden", true);
+														 		 	 		});
+														 		 	
+														 		// begin to draw linear chart in heatmap grid
+														 		// define the axis of linear chart
+														 		 	var linear_xscale = d3.scale.linear()
+														 		 			.domain(d3.extent(v.values.map(function(d) {return d.day;})))
+														 		 			.range([grid_xscale(d.key) + 5, grid_xscale(d.key) + grid_xscale.rangeBand() - 5]);
+														 		 	var linear_yscale = d3.scale.linear()
+														 		 			.domain([d3.min(v.values,function(d){
+														 		 				return d.min_temperature;
+														 		 			}),d3.max(v.values,function(d) {
+														 		 				return d.max_temperature;})])
+														 		 			.range([margin.top + grid_yscale(+v.key) , grid_yscale(+v.key) + grid_yscale.rangeBand() - 5]);
+
+														 		// store the co-ordinate of points
+														 		 	var minline = d3.svg.line()
+														 		 			.x(function(d) {return linear_xscale(d.day);})
+														 		 			.y(function(d) {return linear_yscale(d.min_temperature);});
+														 		 	var maxline = d3.svg.line()
+														 		 			.x(function(d) {return linear_xscale(d.day);})
+														 		 			.y(function(d) {return linear_yscale(d.max_temperature);});
+
+														 		// the line of minimum temperature
+														 		 	var reminline = svg.selectAll(`min`)
+														 		 					 .data([v.values]);
+														 		 	
+														 		 	reminline.enter()
+														 		 			 .append('path')
+
+														 		 	reminline.classed(`min`, true)
+														 		 			 .attr('d', minline)
+														 		 			 .style('stroke', '#55A05C')
+														 		 			 .style('stroke-width', 2)
+														 		 			 .style('fill', 'none');
+
+														 		// the line of maximum temperature
+														 		 	var remaxline = svg.selectAll(`max`)
+														 		 					 .data([v.values]);
+														 		 	
+														 		 	remaxline.enter()
+														 		 			 .append('path');
+
+														 		 	remaxline.classed(`max`, true)
+														 		 			 .attr('d', maxline)
+														 		 			 .style('stroke', '#A6C9DF')
+														 		 			 .style('stroke-width', 2)
+														 		 			 .style('fill', 'none');
+
+
+														 		});
+														 	});
+
+														// the legend to show the mapping between colors and values.
+														 	var legend = svg.selectAll(".legend")
+														 					.data([0].concat(colorscale.quantiles()), function(d) { return d; });
+
+														 	legend.enter()
+														 		  .append("g")
+														 		  .attr("class", "legend");
+
+														 	legend.append("rect")
+														 		  .attr("x", function(d, i) {
+														 		  	return i * legendwidth;
+														 		  })
+														 		  .attr("y", height)
+														 		  .attr("width", legendwidth)
+														 		  .attr("height", gridsize/4)
+														 		  .style("fill", function(d, i) {
+														 		  	return colors[i];
+														 		  });
+
+														 	legend.append("text")
+														 		  .attr("class", "mono")
+														 		  .text(function(d) {
+														 		  	return ">" + Math.round(d);
+														 		  })
+														 		  .attr("x", function(d, i) {
+														 		  	return legendwidth * i;
+														 		  })
+														 		  .attr("y", height + gridsize/5);
+
+														 	legend.exit()
+														 		  .remove();
+														 }
+										);
+				};
+
+				mainchart(dataset);
+
+/*				var datasetpicker = d3.select("#dataset-picker")
+									  .selectAll(".dataset-button")
+									  .data(dataset)
+
+				datasetpicker.enter()
+							 .append("input")
+							 .attr("value", function(d) { return "Dataset " + d; })
+							 .attr("type", "button")
+							 .attr("class", "dataset-button")
+							 .on("click", function(d) { mainchart(d);});
+
+*/
+
+		</script>
+	</body>
+</html>
